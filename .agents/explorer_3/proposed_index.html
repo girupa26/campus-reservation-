@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campus Reserve | Academic Event & Resource Booking Portal</title>
+  <!-- Pure offline CSS with zero external network CDN dependencies (CODE_ONLY compliant) -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header & Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">🏛️</div>
+        <div>
+          <h1 class="brand-title">Campus Reserve</h1>
+          <p class="brand-subtitle">Academic Event & Resource Booking Portal</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="system-status">
+          <span class="status-dot"></span>
+          <span>System Online</span>
+        </div>
+        <button id="btnOpenBookingModal" class="btn btn-primary">
+          <span class="btn-icon">＋</span> Book Resource
+        </button>
+        <button id="btnRefresh" class="btn btn-secondary" title="Refresh Data">
+          <span class="btn-icon">↻</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Banner / Toast Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" role="region" aria-label="Notifications"></div>
+
+  <!-- Main Content Layout -->
+  <main class="main-container">
+    <!-- Quick Statistics Bar -->
+    <section class="stats-bar" aria-label="Portal Overview">
+      <div class="stat-card">
+        <span class="stat-label">Total Resources</span>
+        <span id="statTotalResources" class="stat-value">--</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Seminar Halls</span>
+        <span id="statSeminarHalls" class="stat-value">--</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Laboratories</span>
+        <span id="statLaboratories" class="stat-value">--</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Classrooms</span>
+        <span id="statClassrooms" class="stat-value">--</span>
+      </div>
+      <div class="stat-card highlight">
+        <span class="stat-label">Active Bookings</span>
+        <span id="statTotalBookings" class="stat-value">--</span>
+      </div>
+    </section>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="view-tabs" role="tablist">
+      <button id="tabResources" class="tab-button active" role="tab" aria-selected="true" aria-controls="resourcesSection">
+        🏛️ Institutional Resources
+      </button>
+      <button id="tabBookings" class="tab-button" role="tab" aria-selected="false" aria-controls="bookingsSection">
+        📅 Active Reservations & Schedule
+      </button>
+    </nav>
+
+    <!-- Section 1: Resource Directory -->
+    <section id="resourcesSection" class="view-panel active" role="tabpanel" aria-labelledby="tabResources">
+      <div class="controls-bar">
+        <!-- Category Filters -->
+        <div class="filter-group" role="group" aria-label="Filter resources by type">
+          <button class="filter-pill active" data-category="all">All Resources</button>
+          <button class="filter-pill" data-category="seminar_hall">Seminar Halls</button>
+          <button class="filter-pill" data-category="lab">Laboratories</button>
+          <button class="filter-pill" data-category="classroom">Classrooms</button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="resourceSearchInput" placeholder="Search by name, block, or ID..." aria-label="Search resources">
+        </div>
+      </div>
+
+      <!-- Resource Grid -->
+      <div id="resourceGrid" class="resource-grid" aria-live="polite">
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading institutional resources...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Active Bookings & Schedule -->
+    <section id="bookingsSection" class="view-panel" role="tabpanel" aria-labelledby="tabBookings" hidden>
+      <div class="controls-bar">
+        <div class="filter-group">
+          <label for="bookingResourceFilter" class="filter-label">Filter Resource:</label>
+          <select id="bookingResourceFilter" class="form-select">
+            <option value="all">All Resources</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="bookingDateFilter" class="filter-label">Date:</label>
+          <input type="date" id="bookingDateFilter" class="form-input">
+          <button id="btnResetDateFilter" class="btn btn-text">Show All Dates</button>
+        </div>
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="bookingSearchInput" placeholder="Search by user or event..." aria-label="Search bookings">
+        </div>
+      </div>
+
+      <!-- Bookings Table -->
+      <div class="table-container">
+        <table class="bookings-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Resource</th>
+              <th>Event Title</th>
+              <th>Booked By</th>
+              <th>Date & Time Window</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody id="bookingsTableBody">
+            <tr>
+              <td colspan="6" class="table-message">Loading active bookings...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Interactive Booking Modal / Dialog -->
+  <dialog id="bookingModal" class="modal-dialog">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2 class="modal-title">Reserve Institutional Resource</h2>
+          <p class="modal-subtitle">Ensure your time slot avoids scheduling conflicts.</p>
+        </div>
+        <button type="button" id="btnCloseModal" class="btn-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <!-- Real-Time Conflict / Error Alert Box inside Modal -->
+      <div id="modalAlertBox" class="alert-box" role="alert" style="display: none;">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-content">
+          <strong id="modalAlertTitle">Conflict Detected</strong>
+          <p id="modalAlertMessage">This resource is already reserved for the requested slot.</p>
+        </div>
+      </div>
+
+      <form id="bookingForm" class="booking-form">
+        <!-- Resource Selection -->
+        <div class="form-group">
+          <label for="modalResourceId" class="form-label required">Target Resource</label>
+          <select id="modalResourceId" class="form-select" required>
+            <option value="" disabled selected>Select a seminar hall, lab, or classroom...</option>
+          </select>
+        </div>
+
+        <!-- Event Title -->
+        <div class="form-group">
+          <label for="modalEventTitle" class="form-label required">Event / Class Title</label>
+          <input type="text" id="modalEventTitle" class="form-input" required
+                 placeholder="e.g. CS501 Advanced AI Lecture or Robotics Workshop">
+        </div>
+
+        <!-- User Identification (R3) -->
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="modalUserName" class="form-label required">Organizer / User Name</label>
+            <input type="text" id="modalUserName" class="form-input" required
+                   placeholder="e.g. Prof. Alan Turing">
+          </div>
+          <div class="form-group col-6">
+            <label for="modalUserId" class="form-label required">User ID / Staff ID</label>
+            <input type="text" id="modalUserId" class="form-input" required
+                   placeholder="e.g. FAC-1049">
+          </div>
+        </div>
+
+        <!-- Date & Time Slot (R2) -->
+        <div class="form-row">
+          <div class="form-group col-4">
+            <label for="modalDate" class="form-label required">Date</label>
+            <input type="date" id="modalDate" class="form-input" required>
+          </div>
+          <div class="form-group col-4">
+            <label for="modalStartTime" class="form-label required">Start Time</label>
+            <input type="time" id="modalStartTime" class="form-input" required step="1800">
+          </div>
+          <div class="form-group col-4">
+            <label for="modalEndTime" class="form-label required">End Time</label>
+            <input type="time" id="modalEndTime" class="form-input" required step="1800">
+          </div>
+        </div>
+
+        <!-- Duration calculation pill -->
+        <div id="slotDurationIndicator" class="duration-indicator">
+          <span>🕒 Selected Duration: </span>
+          <strong id="slotDurationValue">--</strong>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="modal-actions">
+          <button type="button" id="btnCancelModal" class="btn btn-secondary">Cancel</button>
+          <button type="submit" id="btnSubmitBooking" class="btn btn-primary">
+            <span class="btn-text">Confirm Reservation</span>
+            <span class="btn-spinner" style="display: none;"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <p>&copy; 2026 Academic Event and Resource Booking Portal. All rights reserved.</p>
+      <p class="footer-note">Conflict-free room scheduling for campus faculty, researchers, and students.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

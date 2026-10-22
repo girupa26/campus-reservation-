@@ -1,0 +1,831 @@
+{
+  "timestamp": "2026-09-16T03:43:35.072906Z",
+  "target_url": "http://127.0.0.1:8000",
+  "total_probes": 47,
+  "passed": 44,
+  "failed": 3,
+  "success_rate_pct": 93.61702127659575,
+  "vulnerabilities": [
+    {
+      "suite": "SuiteA",
+      "test_id": "A6.2",
+      "title": "Timezone offset conflict detection: same instant in +05:30 detected as conflict against UTC (409)",
+      "details": {
+        "initial_utc_booking": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a6_208728",
+          "user_name": "UTC Tester",
+          "start_time": "2068-04-01T10:00:00Z",
+          "end_time": "2068-04-01T12:00:00Z",
+          "event_title": "UTC Timezone Colloquium"
+        },
+        "offset_booking": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a6_offset_208728",
+          "user_name": "Offset Overlap Tester",
+          "start_time": "2068-04-01T15:30:00+05:30",
+          "end_time": "2068-04-01T17:30:00+05:30",
+          "event_title": "Offset Overlap Event (+05:30 is exact same instant as 10:00Z)"
+        },
+        "expected": "HTTP 409 Conflict (identical physical instant in time)",
+        "actual": "HTTP 201 -> {\n  \"id\": \"bkg_fb6d0b00\",\n  \"resource_id\": \"amphi-central\",\n  \"user_id\": \"u_a6_offset_208728\",\n  \"user_name\": \"Offset Overlap Tester\",\n  \"start_time\": \"2068-04-01T15:30:00+05:30\",\n  \"end_time\": \"2068-04-01T17:30:00+05:30\",\n  \"event_title\": \"Offset Overlap Event (+05:30 is exact same instant as 10:00Z)\",\n  \"status\": \"CONFIRMED\",\n  \"created_at\": \"2026-09-16T03:43:29.001858Z\"\n}",
+        "observation": "Server responded 201. Note: If 201 Created, SQLite string comparison bypassed conflict check!"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A7.1",
+      "title": "Mixed naive start & aware end: handled with 400 (no unhandled 500 crash)",
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a7_1_208728",
+          "user_name": "Mixed TZ Tester 1",
+          "start_time": "2068-04-02T10:00:00",
+          "end_time": "2068-04-02T12:00:00Z",
+          "event_title": "Mixed Timezone Seminar (Naive Start, Aware End)"
+        },
+        "expected": "HTTP 400 Bad Request",
+        "actual": "HTTP 500 -> CRASH_OR_ABORT: RemoteDisconnected: Remote end closed connection without response",
+        "observation": "Server responded 500. Unhandled TypeError drops connection if not caught."
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A7.2",
+      "title": "Mixed aware start & naive end: handled with 400 (no unhandled 500 crash)",
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a7_2_208728",
+          "user_name": "Mixed TZ Tester 2",
+          "start_time": "2068-04-02T10:00:00Z",
+          "end_time": "2068-04-02T12:00:00",
+          "event_title": "Mixed Timezone Seminar (Aware Start, Naive End)"
+        },
+        "expected": "HTTP 400 Bad Request",
+        "actual": "HTTP 500 -> CRASH_OR_ABORT: RemoteDisconnected: Remote end closed connection without response",
+        "observation": "Server responded 500. Unhandled TypeError drops connection if not caught."
+      }
+    }
+  ],
+  "results": [
+    {
+      "suite": "SuiteA",
+      "test_id": "A1.1",
+      "title": "Malformed date-time: Random garbage string rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a1_208728",
+          "user_name": "Garbage Date Tester",
+          "start_time": "invalid-garbage-date-time-string",
+          "end_time": "2068-01-01T12:00:00",
+          "event_title": "Garbage Date Event"
+        },
+        "expected": "HTTP 400 with BadRequest",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Invalid ISO 8601 datetime format: Invalid isoformat string: 'invalid-garbage-date-time-string'\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A1.2",
+      "title": "Malformed date-time: Impossible calendar date (Feb 30) rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a12_208728",
+          "user_name": "Calendar Date Tester",
+          "start_time": "2068-02-30T10:00:00",
+          "end_time": "2068-02-30T12:00:00",
+          "event_title": "Impossible Date Event"
+        },
+        "expected": "HTTP 400 with BadRequest",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Invalid ISO 8601 datetime format: day is out of range for month\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A2",
+      "title": "Zero duration interval (start_time == end_time) strictly rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a2_208728",
+          "user_name": "Zero Duration Tester",
+          "start_time": "2068-03-10T14:00:00",
+          "end_time": "2068-03-10T14:00:00",
+          "event_title": "Zero Duration Singularity"
+        },
+        "expected": "HTTP 400 with start_time must be strictly earlier than end_time",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"start_time must be strictly earlier than end_time.\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A3",
+      "title": "Inverted time range (start_time > end_time) rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a3_208728",
+          "user_name": "Time Reversal Tester",
+          "start_time": "2068-03-10T15:00:00",
+          "end_time": "2068-03-10T14:00:00",
+          "event_title": "Back to the Future Seminar"
+        },
+        "expected": "HTTP 400 with start_time must be strictly earlier than end_time",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"start_time must be strictly earlier than end_time.\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A4",
+      "title": "Negative year (-0001) datetime rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a4_208728",
+          "user_name": "Antiquity Tester",
+          "start_time": "-0001-01-01T10:00:00",
+          "end_time": "-0001-01-01T12:00:00",
+          "event_title": "Ancient Philosophy Symposium"
+        },
+        "expected": "HTTP 400 (unsupported or invalid datetime)",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Invalid ISO 8601 datetime format: Invalid isoformat string: '-0001-01-01T10:00:00'\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A5",
+      "title": "Out-of-bounds year (10000+) rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a5_208728",
+          "user_name": "Distant Future Tester",
+          "start_time": "10000-01-01T10:00:00",
+          "end_time": "10000-01-01T12:00:00",
+          "event_title": "Milky Way Colonization"
+        },
+        "expected": "HTTP 400 (year exceeds 9999 limit)",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Invalid ISO 8601 datetime format: Invalid isoformat string: '10000-01-01T10:00:00'\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A6.1",
+      "title": "Timezone ISO (with 'Z' suffix): check response status",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a6_208728",
+          "user_name": "UTC Tester",
+          "start_time": "2068-04-01T10:00:00Z",
+          "end_time": "2068-04-01T12:00:00Z",
+          "event_title": "UTC Timezone Colloquium"
+        },
+        "expected": "HTTP 201 (if supported) or HTTP 400 (if strict naive format required)",
+        "actual": "HTTP 201 -> {\n  \"id\": \"bkg_f480fa76\",\n  \"resource_id\": \"amphi-central\",\n  \"user_id\": \"u_a6_208728\",\n  \"user_name\": \"UTC Tester\",\n  \"start_time\": \"2068-04-01T10:00:00Z\",\n  \"end_time\": \"2068-04-01T12:00:00Z\",\n  \"event_title\": \"UTC Timezone Colloquium\",\n  \"status\": \"CONFIRMED\",\n  \"created_at\": \"2026-09-16T03:43:28.882194Z\"\n}",
+        "observation": "Server responded 201, booking ID: bkg_f480fa76"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A6.2",
+      "title": "Timezone offset conflict detection: same instant in +05:30 detected as conflict against UTC (409)",
+      "passed": false,
+      "details": {
+        "initial_utc_booking": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a6_208728",
+          "user_name": "UTC Tester",
+          "start_time": "2068-04-01T10:00:00Z",
+          "end_time": "2068-04-01T12:00:00Z",
+          "event_title": "UTC Timezone Colloquium"
+        },
+        "offset_booking": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a6_offset_208728",
+          "user_name": "Offset Overlap Tester",
+          "start_time": "2068-04-01T15:30:00+05:30",
+          "end_time": "2068-04-01T17:30:00+05:30",
+          "event_title": "Offset Overlap Event (+05:30 is exact same instant as 10:00Z)"
+        },
+        "expected": "HTTP 409 Conflict (identical physical instant in time)",
+        "actual": "HTTP 201 -> {\n  \"id\": \"bkg_fb6d0b00\",\n  \"resource_id\": \"amphi-central\",\n  \"user_id\": \"u_a6_offset_208728\",\n  \"user_name\": \"Offset Overlap Tester\",\n  \"start_time\": \"2068-04-01T15:30:00+05:30\",\n  \"end_time\": \"2068-04-01T17:30:00+05:30\",\n  \"event_title\": \"Offset Overlap Event (+05:30 is exact same instant as 10:00Z)\",\n  \"status\": \"CONFIRMED\",\n  \"created_at\": \"2026-09-16T03:43:29.001858Z\"\n}",
+        "observation": "Server responded 201. Note: If 201 Created, SQLite string comparison bypassed conflict check!"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A7.1",
+      "title": "Mixed naive start & aware end: handled with 400 (no unhandled 500 crash)",
+      "passed": false,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a7_1_208728",
+          "user_name": "Mixed TZ Tester 1",
+          "start_time": "2068-04-02T10:00:00",
+          "end_time": "2068-04-02T12:00:00Z",
+          "event_title": "Mixed Timezone Seminar (Naive Start, Aware End)"
+        },
+        "expected": "HTTP 400 Bad Request",
+        "actual": "HTTP 500 -> CRASH_OR_ABORT: RemoteDisconnected: Remote end closed connection without response",
+        "observation": "Server responded 500. Unhandled TypeError drops connection if not caught."
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A7.2",
+      "title": "Mixed aware start & naive end: handled with 400 (no unhandled 500 crash)",
+      "passed": false,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a7_2_208728",
+          "user_name": "Mixed TZ Tester 2",
+          "start_time": "2068-04-02T10:00:00Z",
+          "end_time": "2068-04-02T12:00:00",
+          "event_title": "Mixed Timezone Seminar (Aware Start, Naive End)"
+        },
+        "expected": "HTTP 400 Bad Request",
+        "actual": "HTTP 500 -> CRASH_OR_ABORT: RemoteDisconnected: Remote end closed connection without response",
+        "observation": "Server responded 500. Unhandled TypeError drops connection if not caught."
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A8",
+      "title": "Extreme boundary interval: Multi-year booking (5 years)",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a8_208728",
+          "user_name": "Multi-Year Research Project",
+          "start_time": "2073-01-01T00:00:00",
+          "end_time": "2078-01-01T00:00:00",
+          "event_title": "Long-Term AI Institute Grant"
+        },
+        "expected": "HTTP 201 (created) or HTTP 400 (if max duration policy)",
+        "actual": "HTTP 201 -> {\n  \"id\": \"bkg_5205b597\",\n  \"resource_id\": \"amphi-central\",\n  \"user_id\": \"u_a8_208728\",\n  \"user_name\": \"Multi-Year Research Project\",\n  \"start_time\": \"2073-01-01T00:00:00\",\n  \"end_time\": \"2078-01-01T00:00:00\",\n  \"event_title\": \"Long-Term AI Institute Grant\",\n  \"status\": \"CONFIRMED\",\n  \"created_at\": \"2026-09-16T03:43:29.409320Z\"\n}",
+        "observation": "Server responded 201"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A8.1",
+      "title": "Multi-year booking prevents internal conflict across entire 5-year interval",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a8_overlap_208728",
+          "user_name": "Mid-Grant Interruption",
+          "start_time": "2075-06-01T10:00:00",
+          "end_time": "2075-06-01T12:00:00",
+          "event_title": "Conflicting Mid-Grant Event"
+        },
+        "expected": "HTTP 409 Conflict",
+        "actual": "HTTP 409 -> {\n  \"error\": \"Conflict\",\n  \"message\": \"Resource amphi-central is already reserved for the requested time slot.\",\n  \"conflict_with\": {\n    \"id\": \"bkg_5205b597\",\n    \"event_title\": \"Long-Term AI Institute Grant\",\n    \"user_name\": \"Multi-Year Research Project\",\n    \"start_time\": \"2073-01-01T00:00:00\",\n    \"end_time\": \"2078-01-01T00:00:00\"\n  }\n}",
+        "observation": "Conflict detection inside multi-year booking returned 409"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A9.1",
+      "title": "Micro-interval booking (1 microsecond duration)",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a9_208728",
+          "user_name": "High-Frequency Booking Tester",
+          "start_time": "2068-06-01T10:00:00.000001",
+          "end_time": "2068-06-01T10:00:00.000002",
+          "event_title": "Microsecond Quantum Laser Pulse"
+        },
+        "expected": "HTTP 201 or HTTP 400 (if min duration enforced)",
+        "actual": "HTTP 201 -> {\n  \"id\": \"bkg_29073054\",\n  \"resource_id\": \"amphi-central\",\n  \"user_id\": \"u_a9_208728\",\n  \"user_name\": \"High-Frequency Booking Tester\",\n  \"start_time\": \"2068-06-01T10:00:00.000001\",\n  \"end_time\": \"2068-06-01T10:00:00.000002\",\n  \"event_title\": \"Microsecond Quantum Laser Pulse\",\n  \"status\": \"CONFIRMED\",\n  \"created_at\": \"2026-09-16T03:43:29.762318Z\"\n}",
+        "observation": "Server responded 201"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A10.1",
+      "title": "Midnight boundary transition (23:55 to 00:05 next day) accepted (201)",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a10_208728",
+          "user_name": "Nocturnal Astronomer",
+          "start_time": "2068-07-15T23:55:00",
+          "end_time": "2068-07-16T00:05:00",
+          "event_title": "Midnight Stargazing Session"
+        },
+        "expected": "HTTP 201 Created",
+        "actual": "HTTP 201 -> {\n  \"id\": \"bkg_67329496\",\n  \"resource_id\": \"amphi-central\",\n  \"user_id\": \"u_a10_208728\",\n  \"user_name\": \"Nocturnal Astronomer\",\n  \"start_time\": \"2068-07-15T23:55:00\",\n  \"end_time\": \"2068-07-16T00:05:00\",\n  \"event_title\": \"Midnight Stargazing Session\",\n  \"status\": \"CONFIRMED\",\n  \"created_at\": \"2026-09-16T03:43:30.015251Z\"\n}",
+        "observation": "Server responded 201"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A10.2",
+      "title": "Conflict check crossing midnight correctly rejected with 409",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a10_c_208728",
+          "user_name": "Overlapping Nocturnal",
+          "start_time": "2068-07-16T00:00:00",
+          "end_time": "2068-07-16T01:00:00",
+          "event_title": "Conflicting Post-Midnight Session"
+        },
+        "expected": "HTTP 409 Conflict",
+        "actual": "HTTP 409 -> {\n  \"error\": \"Conflict\",\n  \"message\": \"Resource amphi-central is already reserved for the requested time slot.\",\n  \"conflict_with\": {\n    \"id\": \"bkg_67329496\",\n    \"event_title\": \"Midnight Stargazing Session\",\n    \"user_name\": \"Nocturnal Astronomer\",\n    \"start_time\": \"2068-07-15T23:55:00\",\n    \"end_time\": \"2068-07-16T00:05:00\"\n  }\n}",
+        "observation": "Server responded 409"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A11",
+      "title": "Adjacent slots touching exactly at midnight allowed back-to-back (201)",
+      "passed": true,
+      "details": {
+        "expected": "Both slots return HTTP 201",
+        "actual": "Slot 1: HTTP 201, Slot 2: HTTP 201",
+        "observation": "Slot 1: {\n  \"id\": \"bkg_dbd4533d\",\n  \"resource_id\": \"amphi-central\",\n  \"user_id\": \"u_a11_1_208728\",\n  \"user_name\": \"Pre-Midnight Prof\",\n  \"start_time\": \"2068-08-01T22:00:00\",\n  \"end_time\": \"2068-08-02T00:00:00\",\n  \"event_title\": \"Pre-Midnight Study\",\n  \"status\": \"CONFIRMED\",\n  \"created_at\": \"2026-09-16T03:43:30.365400Z\"\n}, Slot 2: {\n  \"id\": \"bkg_543f3c01\",\n  \"resource_id\": \"amphi-central\",\n  \"user_id\": \"u_a11_2_208728\",\n  \"user_name\": \"Post-Midnight Prof\",\n  \"start_time\": \"2068-08-02T00:00:00\",\n  \"end_time\": \"2068-08-02T02:00:00\",\n  \"event_title\": \"Post-Midnight Study\",\n  \"status\": \"CONFIRMED\",\n  \"created_at\": \"2026-09-16T03:43:30.499667Z\"\n}"
+      }
+    },
+    {
+      "suite": "SuiteA",
+      "test_id": "A12",
+      "title": "Year-end boundary transition (Dec 31 -> Jan 1) accepted (201)",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_a12_208728",
+          "user_name": "New Year Gala Organizer",
+          "start_time": "2068-12-31T23:30:00",
+          "end_time": "2069-01-01T01:00:00",
+          "event_title": "University New Year Countdown"
+        },
+        "expected": "HTTP 201 Created",
+        "actual": "HTTP 201 -> {\n  \"id\": \"bkg_d899ba37\",\n  \"resource_id\": \"amphi-central\",\n  \"user_id\": \"u_a12_208728\",\n  \"user_name\": \"New Year Gala Organizer\",\n  \"start_time\": \"2068-12-31T23:30:00\",\n  \"end_time\": \"2069-01-01T01:00:00\",\n  \"event_title\": \"University New Year Countdown\",\n  \"status\": \"CONFIRMED\",\n  \"created_at\": \"2026-09-16T03:43:30.895650Z\"\n}",
+        "observation": "Server responded 201"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B1",
+      "title": "Missing user_id field entirely rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_name": "No ID User",
+          "start_time": "2068-09-01T10:00:00",
+          "end_time": "2068-09-01T12:00:00",
+          "event_title": "Missing User ID Event"
+        },
+        "expected": "HTTP 400 mentioning missing user_id",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Missing required booking fields: user_id.\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B2",
+      "title": "Empty string user_id rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "",
+          "user_name": "Empty ID User",
+          "start_time": "2068-09-01T10:00:00",
+          "end_time": "2068-09-01T12:00:00",
+          "event_title": "Empty User ID Event"
+        },
+        "expected": "HTTP 400 mentioning missing user_id",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Missing required booking fields: user_id.\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B3",
+      "title": "Whitespace-only user_id rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "    \t  \n  ",
+          "user_name": "Whitespace ID User",
+          "start_time": "2068-09-01T10:00:00",
+          "end_time": "2068-09-01T12:00:00",
+          "event_title": "Whitespace User ID Event"
+        },
+        "expected": "HTTP 400 mentioning missing user_id",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Missing required booking fields: user_id.\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B4",
+      "title": "Null user_id rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": null,
+          "user_name": "Null ID User",
+          "start_time": "2068-09-01T10:00:00",
+          "end_time": "2068-09-01T12:00:00",
+          "event_title": "Null User ID Event"
+        },
+        "expected": "HTTP 400 mentioning missing user_id",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Missing required booking fields: user_id.\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B5",
+      "title": "Missing user_name entirely rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_b5_208728",
+          "start_time": "2068-09-01T10:00:00",
+          "end_time": "2068-09-01T12:00:00",
+          "event_title": "Missing User Name Event"
+        },
+        "expected": "HTTP 400 mentioning missing user_name",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Missing required booking fields: user_name.\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B6",
+      "title": "Empty string user_name rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_b6_208728",
+          "user_name": "",
+          "start_time": "2068-09-01T10:00:00",
+          "end_time": "2068-09-01T12:00:00",
+          "event_title": "Empty User Name Event"
+        },
+        "expected": "HTTP 400 mentioning missing user_name",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Missing required booking fields: user_name.\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B7",
+      "title": "Null user_name rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_b7_208728",
+          "user_name": null,
+          "start_time": "2068-09-01T10:00:00",
+          "end_time": "2068-09-01T12:00:00",
+          "event_title": "Null User Name Event"
+        },
+        "expected": "HTTP 400 mentioning missing user_name",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Missing required booking fields: user_name.\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B8",
+      "title": "SQL Injection in user_name neutralized safely (parameterized query)",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_b8_208728",
+          "user_name": "Prof. Robert'); DROP TABLE bookings;--",
+          "start_time": "2068-09-02T10:00:00",
+          "end_time": "2068-09-02T12:00:00",
+          "event_title": "Database Security Lecture"
+        },
+        "expected": "HTTP 201 with literal user_name preserved and DB table bookings intact",
+        "actual": "HTTP 201, DB Query status: 200",
+        "observation": "Booking ID: bkg_71913027"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B9",
+      "title": "XSS payload stored as literal text in API (201)",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_b9_208728",
+          "user_name": "Dr. <script>alert('XSS Attack!')</script>",
+          "start_time": "2068-09-03T10:00:00",
+          "end_time": "2068-09-03T12:00:00",
+          "event_title": "Workshop on Web Security <script>alert('XSS Attack!')</script>"
+        },
+        "expected": "HTTP 201 with text stored literally without server failure",
+        "actual": "HTTP 201 -> {\n  \"id\": \"bkg_e177ab30\",\n  \"resource_id\": \"amphi-central\",\n  \"user_id\": \"u_b9_208728\",\n  \"user_name\": \"Dr. <script>alert('XSS Attack!')</script>\",\n  \"start_time\": \"2068-09-03T10:00:00\",\n  \"end_time\": \"2068-09-03T12:00:00\",\n  \"event_title\": \"Workshop on Web Security <script>alert('XSS Attack!')</script>\",\n  \"status\": \"CONFIRMED\",\n  \"created_at\": \"2026-09-16T03:43:31.564805Z\"\n}",
+        "observation": "Booking ID: bkg_e177ab30"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B10",
+      "title": "Unicode & multi-byte UTF-8 emoji strings stored and retrieved faithfully",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "amphi-central",
+          "user_id": "u_b10_208728",
+          "user_name": "Prof. \ud83c\udf93 H\u00e9l\u00e8ne M\u00fcller-\u00c5rstr\u00f6m \ud83d\udc69\u200d\ud83d\udd2c",
+          "start_time": "2068-09-04T10:00:00",
+          "end_time": "2068-09-04T12:00:00",
+          "event_title": "Quantum Entanglement & Space-Time \ud83d\ude80 \u2728 \u269b\ufe0f"
+        },
+        "expected": "HTTP 201 with exact UTF-8 preservation",
+        "actual": "HTTP 201 -> user_name: Prof. \ud83c\udf93 H\u00e9l\u00e8ne M\u00fcller-\u00c5rstr\u00f6m \ud83d\udc69\u200d\ud83d\udd2c",
+        "observation": "Response: {\n  \"id\": \"bkg_28cf380f\",\n  \"resource_id\": \"amphi-central\",\n  \"user_id\": \"u_b10_208728\",\n  \"user_name\": \"Prof. \\ud83c\\udf93 H\\u00e9l\\u00e8ne M\\u00fcller-\\u00c5rstr\\u00f6m \\ud83d\\udc69\\u200d\\ud83d\\udd2c\",\n  \"start_time\": \"2068-09-04T10:00:00\",\n  \"end_time\": \"2068-09-04T12:00:00\",\n  \"event_title\": \"Quantum Entanglement & Space-Time \\ud83d\\ude80 \\u2728 \\u269b\\ufe0f\",\n  \"status\": \"CONFIRMED\",\n  \"created_at\": \"2026-09-16T03:43:31.820577Z\"\n}"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B11",
+      "title": "Large payload field (10,000 characters) handled without crash",
+      "passed": true,
+      "details": {
+        "expected": "HTTP 201 or 400 (no 500 crash or memory exhaustion)",
+        "actual": "HTTP 201",
+        "observation": "Status: 201, booking ID: bkg_b0c76f0c"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B12",
+      "title": "Empty JSON payload {} rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {},
+        "expected": "HTTP 400 BadRequest",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Missing required booking fields: resource_id, user_id, user_name, start_time, end_time, event_title.\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B13",
+      "title": "Empty body (0 bytes) rejected with 400",
+      "passed": true,
+      "details": {
+        "expected": "HTTP 400 BadRequest (Request body must not be empty)",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Request body must not be empty.\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteB",
+      "test_id": "B14",
+      "title": "Malformed JSON syntax rejected with 400",
+      "passed": true,
+      "details": {
+        "expected": "HTTP 400 Malformed JSON request",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Malformed JSON request: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteC",
+      "test_id": "C1",
+      "title": "Booking non-existent resource_id returns 404 NotFound",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "ghost-hall-nonexistent-404",
+          "user_id": "u_c1_208728",
+          "user_name": "Ghost Hunter",
+          "start_time": "2068-10-01T10:00:00",
+          "end_time": "2068-10-01T12:00:00",
+          "event_title": "Phantom Booking"
+        },
+        "expected": "HTTP 404 NotFound",
+        "actual": "HTTP 404 -> {\n  \"error\": \"NotFound\",\n  \"message\": \"Resource 'ghost-hall-nonexistent-404' does not exist or is inactive.\"\n}",
+        "observation": "Server responded 404"
+      }
+    },
+    {
+      "suite": "SuiteC",
+      "test_id": "C2",
+      "title": "Empty resource_id rejected with 400",
+      "passed": true,
+      "details": {
+        "payload": {
+          "resource_id": "",
+          "user_id": "u_c2_208728",
+          "user_name": "No Resource User",
+          "start_time": "2068-10-01T10:00:00",
+          "end_time": "2068-10-01T12:00:00",
+          "event_title": "No Resource Booking"
+        },
+        "expected": "HTTP 400 mentioning missing resource_id",
+        "actual": "HTTP 400 -> {\n  \"error\": \"BadRequest\",\n  \"message\": \"Missing required booking fields: resource_id.\"\n}",
+        "observation": "Server responded 400"
+      }
+    },
+    {
+      "suite": "SuiteC",
+      "test_id": "C3",
+      "title": "GET non-existent resource returns 404 NotFound",
+      "passed": true,
+      "details": {
+        "expected": "HTTP 404 NotFound",
+        "actual": "HTTP 404 -> {\n  \"error\": \"NotFound\",\n  \"message\": \"Resource 'nonexistent-resource-id-999' does not exist.\"\n}",
+        "observation": "Server responded 404"
+      }
+    },
+    {
+      "suite": "SuiteC",
+      "test_id": "C4",
+      "title": "DELETE non-existent booking returns 404 NotFound",
+      "passed": true,
+      "details": {
+        "expected": "HTTP 404 NotFound",
+        "actual": "HTTP 404 -> {\n  \"error\": \"NotFound\",\n  \"message\": \"Booking 'bkg_nonexistent_999999' not found.\"\n}",
+        "observation": "Server responded 404"
+      }
+    },
+    {
+      "suite": "SuiteC",
+      "test_id": "C5",
+      "title": "Double DELETE on booking bkg_17fececd: 1st=200, 2nd=200",
+      "passed": true,
+      "details": {
+        "expected": "1st DELETE: 200, 2nd DELETE: 200 (idempotent) or 404",
+        "actual": "1st: HTTP 200, 2nd: HTTP 200",
+        "observation": "2nd DELETE body: {\n  \"status\": \"CANCELLED\",\n  \"id\": \"bkg_17fececd\"\n}"
+      }
+    },
+    {
+      "suite": "SuiteC",
+      "test_id": "C6.1",
+      "title": "Invalid HTTP Method: PUT /api/bookings returns 405/501",
+      "passed": true,
+      "details": {
+        "expected": "HTTP 405 Method Not Allowed or 501 Unsupported Method",
+        "actual": "HTTP 501 -> <!DOCTYPE HTML>\n<html lang=\"en\">\n    <head>\n        <meta charset=\"utf-8\">\n        <title>Error response</title>\n    </head>\n    <body>\n        <h1>Error response</h1>\n        <p>Error code: 501</p>\n        <p>Message: Unsupported method ('PUT').</p>\n        <p>Error code explanation: 501 - Server does not support this operation.</p>\n    </body>\n</html>\n",
+        "observation": "Server responded 501"
+      }
+    },
+    {
+      "suite": "SuiteC",
+      "test_id": "C6.2",
+      "title": "Invalid HTTP Method: PATCH /api/resources returns 405/501",
+      "passed": true,
+      "details": {
+        "expected": "HTTP 405 Method Not Allowed or 501 Unsupported Method",
+        "actual": "HTTP 501 -> <!DOCTYPE HTML>\n<html lang=\"en\">\n    <head>\n        <meta charset=\"utf-8\">\n        <title>Error response</title>\n    </head>\n    <body>\n        <h1>Error response</h1>\n        <p>Error code: 501</p>\n        <p>Message: Unsupported method ('PATCH').</p>\n        <p>Error code explanation: 501 - Server does not support this operation.</p>\n    </body>\n</html>\n",
+        "observation": "Server responded 501"
+      }
+    },
+    {
+      "suite": "SuiteC",
+      "test_id": "C6.3",
+      "title": "Invalid POST to read-only /api/resources returns 404/405",
+      "passed": true,
+      "details": {
+        "expected": "HTTP 404 or 405",
+        "actual": "HTTP 404 -> {\n  \"error\": \"NotFound\",\n  \"message\": \"Endpoint POST /api/resources not found.\"\n}",
+        "observation": "Server responded 404"
+      }
+    },
+    {
+      "suite": "SuiteC",
+      "test_id": "C6.4",
+      "title": "Invalid DELETE on collection /api/resources returns 404/405",
+      "passed": true,
+      "details": {
+        "expected": "HTTP 404 or 405",
+        "actual": "HTTP 404 -> {\n  \"error\": \"NotFound\",\n  \"message\": \"Endpoint DELETE /api/resources not found.\"\n}",
+        "observation": "Server responded 404"
+      }
+    },
+    {
+      "suite": "SuiteC",
+      "test_id": "C7.1",
+      "title": "GET non-existent API endpoint returns 404",
+      "passed": true,
+      "details": {
+        "expected": "HTTP 404",
+        "actual": "HTTP 404",
+        "observation": "Response: <!DOCTYPE HTML>\n<html lang=\"en\">\n    <head>\n        <meta charset=\"utf-8\">\n        <title>Error response</title>\n    </head>\n    <body>\n        <h1>Error response</h1>\n        <p>Error code: 404</p>\n        <p>Message: File not found.</p>\n        <p>Error code explanation: 404 - Nothing matches the given URI.</p>\n    </body>\n</html>\n"
+      }
+    },
+    {
+      "suite": "SuiteC",
+      "test_id": "C7.2",
+      "title": "POST non-existent API endpoint returns 404",
+      "passed": true,
+      "details": {
+        "expected": "HTTP 404",
+        "actual": "HTTP 404",
+        "observation": "Response: {\n  \"error\": \"NotFound\",\n  \"message\": \"Endpoint POST /api/unknown_endpoint_xyz not found.\"\n}"
+      }
+    },
+    {
+      "suite": "SuiteC",
+      "test_id": "C8",
+      "title": "Directory traversal attempt blocked (no source leak)",
+      "passed": true,
+      "details": {
+        "expected": "HTTP 400/403/404 or sanitized path without leaking server.py source code",
+        "actual": "HTTP 404",
+        "observation": "Body leaked server.py: False"
+      }
+    },
+    {
+      "suite": "SuiteD",
+      "test_id": "D1",
+      "title": "Rapid sequential duplicate submission: 1st=201, 2nd=409 Conflict",
+      "passed": true,
+      "details": {
+        "expected": "1st request: 201 Created, 2nd request: 409 Conflict",
+        "actual": "1st: HTTP 201, 2nd: HTTP 409",
+        "observation": "2nd body: {\n  \"error\": \"Conflict\",\n  \"message\": \"Resource amphi-central is already reserved for the requested time slot.\",\n  \"conflict_with\": {\n    \"id\": \"bkg_1c196ed3\",\n    \"event_title\": \"Sequential Duplicate Test\",\n    \"user_name\": \"Sequential Submitter\",\n    \"start_time\": \"2068-11-01T10:00:00\",\n    \"end_time\": \"2068-11-01T12:00:00\"\n  }\n}"
+      }
+    },
+    {
+      "suite": "SuiteD",
+      "test_id": "D2",
+      "title": "Atomic concurrency contention: 1x 201 Created, 14x 409 Conflict (0 race hazards)",
+      "passed": true,
+      "details": {
+        "burst_size": 15,
+        "duration_sec": 1.085,
+        "status_counts": {
+          "201": 1,
+          "409": 14
+        },
+        "created_ids": [
+          "bkg_0f85f547"
+        ],
+        "expected": "{201: 1, 409: 14}",
+        "actual": "{201: 1, 409: 14}",
+        "observation": "Completed 15 concurrent requests in 1.085s"
+      }
+    },
+    {
+      "suite": "SuiteD",
+      "test_id": "D2.1",
+      "title": "Database integrity after concurrent burst: exactly 1 booking persisted",
+      "passed": true,
+      "details": {
+        "expected": "Exactly 1 persisted booking matching timestamp in SQLite",
+        "actual": "Found 1 matching bookings in active list",
+        "observation": "Persisted booking: [{'id': 'bkg_0f85f547', 'resource_id': 'amphi-central', 'user_id': 'racer_0_208728', 'user_name': 'Concurrent Racer #0', 'start_time': '2068-11-02T14:00:00', 'end_time': '2068-11-02T16:00:00', 'event_title': 'High Concurrency Contention #0', 'status': 'CONFIRMED', 'created_at': '2026-09-16T03:43:33.464152Z'}]"
+      }
+    },
+    {
+      "suite": "SuiteD",
+      "test_id": "D3",
+      "title": "Slot liberation & immediate re-booking after DELETE cancellation (201)",
+      "passed": true,
+      "details": {
+        "expected": "1st book: 201, delete: 200, 2nd book: 201",
+        "actual": "1st book: 201, delete: 200, 2nd book: 201",
+        "observation": "Re-booked booking ID: bkg_20af934f"
+      }
+    }
+  ]
+}
